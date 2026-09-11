@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pahel — a small quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,500;1,700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+
+  body{
+    background:#FFF7F0;
+    background-image:radial-gradient(rgba(232,69,127,.075) 1px, transparent 1.35px);
+    background-size:22px 22px;
+    color:#2B1A14;
+    font-family:'Poppins',system-ui,-apple-system,sans-serif;
+    font-weight:300;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:26px 16px 40px;
+    min-height:100%;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ---------- header ---------- */
+  .head{
+    text-align:center;
+    max-width:640px;
+    margin-bottom:20px;
+  }
+  .head .kicker{
+    font-size:.68rem;
+    letter-spacing:.34em;
+    text-transform:uppercase;
+    color:#B3396E;
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .head h1{
+    font-family:'Playfair Display',serif;
+    font-weight:900;
+    font-size:clamp(1.7rem,6vw,2.5rem);
+    line-height:1.1;
+    color:#C2185B;
+    letter-spacing:-.01em;
+    margin-bottom:10px;
+  }
+  .head p{
+    font-size:clamp(.88rem,2.6vw,.98rem);
+    line-height:1.65;
+    color:#6B4A3A;
+    max-width:38ch;
+    margin:0 auto;
+  }
+
+  /* ---------- stage ---------- */
+  .stage{
+    position:relative;
+    width:100%;
+    max-width:760px;
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:
+      0 0 0 3px #FFFDFA,
+      0 0 0 5px rgba(194,24,91,.28),
+      0 22px 54px rgba(160,60,110,.22);
+    background:#4FB8E0;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+
+  #game{
+    display:block;
+    width:100%;
+    height:auto;
+    image-rendering:pixelated;
+    image-rendering:-moz-crisp-edges;
+    image-rendering:crisp-edges;
+    touch-action:none;
+  }
+
+  /* ---------- floating labels ---------- */
+  .labels{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .hut-label{
+    position:absolute;
+    left:0;top:0;
+    transform-origin:50% 50%;
+    padding:4px 11px;
+    border-radius:999px;
+    font-family:'Playfair Display',serif;
+    font-weight:700;
+    font-size:clamp(.6rem,1.9vw,.78rem);
+    letter-spacing:.05em;
+    white-space:nowrap;
+    color:#FFF7F0;
+    background:var(--c,#C2185B);
+    box-shadow:0 3px 0 rgba(0,0,0,.22), 0 0 0 2px rgba(255,255,255,.85);
+    transition:opacity .3s ease;
+    will-change:transform;
+  }
+
+  /* ---------- proximity prompt ---------- */
+  .prompt{
+    position:absolute;
+    left:0;top:0;
+    transform-origin:50% 50%;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:7px 14px;
+    border-radius:999px;
+    background:#FFFDFA;
+    border:2px solid #C2185B;
+    color:#8E1247;
+    font-family:'Playfair Display',serif;
+    font-weight:700;
+    font-size:clamp(.62rem,2vw,.8rem);
+    letter-spacing:.04em;
+    white-space:nowrap;
+    pointer-events:auto;
+    cursor:pointer;
+    box-shadow:0 5px 0 rgba(194,24,91,.28);
+    opacity:0;
+    transition:opacity .22s ease, transform .22s ease;
+    will-change:transform;
+  }
+  .prompt.on{opacity:1}
+  .prompt:active{transform:scale(.94)}
+  .prompt .key{
+    display:inline-block;
+    padding:2px 7px;
+    border-radius:5px;
+    background:#FFE4EE;
+    font-size:.85em;
+    letter-spacing:.08em;
+  }
+
+  /* ---------- joystick ---------- */
+  .joy{
+    position:absolute;
+    width:96px;height:96px;
+    margin:-48px 0 0 -48px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,.6);
+    background:rgba(255,255,255,.16);
+    backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .18s ease;
+    z-index:6;
+  }
+  .joy.on{opacity:1}
+  .joy-knob{
+    position:absolute;
+    left:50%;top:50%;
+    width:40px;height:40px;
+    margin:-20px 0 0 -20px;
+    border-radius:50%;
+    background:rgba(255,255,255,.82);
+    box-shadow:0 3px 10px rgba(120,40,80,.35);
+  }
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:absolute;
+    left:50%;
+    bottom:16px;
+    transform:translate(-50%, 22px);
+    max-width:86%;
+    padding:11px 20px;
+    border-radius:14px;
+    background:rgba(255,253,250,.96);
+    border:2px solid rgba(194,24,91,.35);
+    color:#8E1247;
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:clamp(.78rem,2.4vw,.98rem);
+    line-height:1.45;
+    text-align:center;
+    box-shadow:0 12px 28px rgba(160,60,110,.2);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .4s ease, transform .4s ease;
+    z-index:7;
+  }
+  .toast.on{opacity:1;transform:translate(-50%, 0)}
+
+  /* ---------- ending ---------- */
+  .ending{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(43,26,20,.55);
+    backdrop-filter:blur(5px);
+    -webkit-backdrop-filter:blur(5px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .7s ease;
+    z-index:20;
+  }
+  .ending.on{opacity:1;pointer-events:auto}
+
+  .ending-card{
+    width:100%;
+    max-width:480px;
+    max-height:100%;
+    overflow-y:auto;
+    background:#FFFDFA;
+    border-radius:18px;
+    padding:clamp(22px,4vw,34px);
+    text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,.35);
+    transform:translateY(18px) scale(.97);
+    transition:transform .7s cubic-bezier(.2,.9,.3,1.2);
+    -webkit-overflow-scrolling:touch;
+  }
+  .ending.on .ending-card{transform:none}
+
+  .ending-card .pick-line{
+    font-size:.66rem;
+    letter-spacing:.3em;
+    text-transform:uppercase;
+    color:#B3396E;
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  .ending-card h2{
+    font-family:'Playfair Display',serif;
+    font-weight:900;
+    font-size:clamp(1.6rem,5.4vw,2.2rem);
+    line-height:1.1;
+    color:#C2185B;
+    margin-bottom:18px;
+  }
+  .ending-card .letter{
+    font-family:'Playfair Display',serif;
+    font-weight:400;
+    font-size:clamp(.86rem,2.5vw,.98rem);
+    line-height:1.85;
+    color:#3B2419;
+    text-align:left;
+    margin-bottom:20px;
+  }
+  .ending-card .letter p{margin-bottom:.95em}
+  .ending-card .letter p:last-child{margin-bottom:0}
+
+  .date-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 22px;
+    border-radius:999px;
+    border:2px solid rgba(194,24,91,.24);
+    background:#FFF7F0;
+    margin-bottom:20px;
+  }
+  .date-badge .old{
+    position:relative;
+    font-family:'Playfair Display',serif;
+    font-weight:500;
+    font-size:clamp(.86rem,2.6vw,1rem);
+    color:#B39A8E;
+  }
+  .date-badge .old::after{
+    content:"";
+    position:absolute;
+    left:-8%;right:-8%;top:52%;
+    height:2px;
+    background:#E8327B;
+    transform:rotate(-6deg);
+    border-radius:2px;
+    box-shadow:0 0 0 1.5px #FFF7F0;
+  }
+  .date-badge .arw{color:#C2185B;opacity:.5}
+  .date-badge .new{
+    font-family:'Playfair Display',serif;
+    font-weight:900;
+    font-size:clamp(1.05rem,3.4vw,1.35rem);
+    color:#C2185B;
+  }
+
+  .replay{
+    background:transparent;
+    border:2px solid rgba(194,24,91,.4);
+    color:#8E1247;
+    font-family:'Poppins',sans-serif;
+    font-weight:500;
+    font-size:.78rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:10px 22px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .2s, color .2s, border-color .2s;
+  }
+  .replay:hover{background:#C2185B;color:#FFF7F0;border-color:#C2185B}
+
+  /* ---------- footer hint ---------- */
+  .foot{
+    margin-top:16px;
+    font-size:.72rem;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:#B3396E;
+    opacity:.72;
+    text-align:center;
+    line-height:1.9;
+  }
+  .foot b{font-weight:600}
+
+  @media (max-width:520px){
+    body{padding:18px 10px 30px}
+    .stage{border-radius:15px}
+    .foot{font-size:.64rem}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition-duration:.01ms !important; animation-duration:.01ms !important}
+  }
+</style>
+</head>
+<body>
+
+<header class="head">
+  <p class="kicker">a small quest</p>
+  <h1>Pahel, come walk with me</h1>
+  <p>Wander around. Find the five flowers I left for you. Then pick where we eat.</p>
+</header>
+
+<div class="stage" id="stage">
+  <canvas id="game"></canvas>
+  <div class="labels" id="labels"></div>
+
+  <div class="prompt" id="prompt">
+    <span id="promptText">Choose</span>
+    <span class="key" id="promptKey">SPACE</span>
+  </div>
+
+  <div class="joy" id="joy"><div class="joy-knob" id="joyKnob"></div></div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="ending" id="ending">
+    <div class="ending-card">
+      <p class="pick-line">you chose</p>
+      <h2 id="endName">—</h2>
+
+      <div class="letter" id="endLetter">
+        <p>I'm sorry for being carefree and absent-minded — so much so that I forget the promises I make.</p>
+        <p>I want to say that the excitement of that day is not to blame. It is the reason my little mind couldn't fix anything, and couldn't keep in memory what I said.</p>
+        <p>That date was lovely. And I'm sorry I couldn't ask you out sooner.</p>
+        <p>Please come with me to share some food, at any of the places of your choice.</p>
+      </div>
+
+      <div class="date-badge">
+        <span class="old">15<sup>th</sup> Sept</span>
+        <span class="arw">→</span>
+        <span class="new">16<sup>th</sup> Sept</span>
+      </div>
+
+      <div>
+        <button class="replay" id="replay" type="button">walk again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="foot">
+  <b>drag</b> anywhere to walk &nbsp;·&nbsp; <b>arrow keys</b> or <b>WASD</b> on a computer
+</p>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     0.  CONFIG
+     ========================================================= */
+  const VIEW_W = 360, VIEW_H = 240;
+  const TILE   = 16;
+  const MAP_W  = 60, MAP_H = 46;
+  const WORLD_W = MAP_W * TILE;   /* 960 */
+  const WORLD_H = MAP_H * TILE;   /* 736 */
+
+  const canvas  = document.getElementById('game');
+  const ctx     = canvas.getContext('2d');
+  canvas.width  = VIEW_W;
+  canvas.height = VIEW_H;
+  ctx.imageSmoothingEnabled = false;
+
+  const stageEl  = document.getElementById('stage');
+  const labelsEl = document.getElementById('labels');
+  const promptEl = document.getElementById('prompt');
+  const promptTx = document.getElementById('promptText');
+  const promptKy = document.getElementById('promptKey');
+  const joyEl    = document.getElementById('joy');
+  const joyKnob  = document.getElementById('joyKnob');
+  const toastEl  = document.getElementById('toast');
+  const endingEl = document.getElementById('ending');
+  const endName  = document.getElementById('endName');
+  const replayEl = document.getElementById('replay');
+
+  /* =========================================================
+     1.  PIXEL SPRITE FACTORY
+     ========================================================= */
+  function buildSprite(rows, pal) {
+    const w = rows[0].length, h = rows.length;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    for (let y = 0; y < h; y++) {
+      const row = rows[y];
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        if (ch === '.') continue;
+        const col = pal[ch];
+        if (!col) continue;
+        g.fillStyle = col;
+        g.fillRect(x, y, 1, 1);
+      }
+    }
+    return c;
+  }
+
+  function flipCanvas(src) {
+    const c = document.createElement('canvas');
+    c.width = src.width; c.height = src.height;
+    const g = c.getContext('2d');
+    g.translate(src.width, 0);
+    g.scale(-1, 1);
+    g.drawImage(src, 0, 0);
+    return c;
+  }
+
+  /* ---------- palette ---------- */
+  const P = {
+    '0': '#2B1A14',   /* outline */
+    '1': '#3A2417',   /* hair */
+    '2': '#F2C9A0',   /* skin */
+    '3': '#FFE0B8',   /* skin light */
+    '4': '#C2185B',   /* dress */
+    '5': '#8E1247',   /* shoes */
+    '6': '#E8327B'    /* dress light */
+  };
+
+  /* ---------- Pahel ---------- */
+  const P_FRONT_A = [
+    "....0000....",
+    "..00111100..",
+    ".0111111110.",
+    ".0112222110.",
+    ".0122222210.",
+    "..02222220..",
+    "..00222200..",
+    "...044440...",
+    "..44444444..",
+    ".4444444444.",
+    ".0444444440.",
+    "..04444440..",
+    "...02..20...",
+    "...02..20...",
+    "...55..55...",
+    "...00..00..."
+  ];
+
+  const P_FRONT_B = [
+    "....0000....",
+    "..00111100..",
+    ".0111111110.",
+    ".0112222110.",
+    ".0122222210.",
+    "..02222220..",
+    "..00222200..",
+    "...044440...",
+    "..44444444..",
+    ".4444444444.",
+    ".0444444440.",
+    "..04444440..",
+    "...02..20...",
+    "...02..20...",
+    "..55....55..",
+    "..00....00.."
+  ];
+
+  const P_BACK_A = [
+    "....0000....",
+    "..00111100..",
+    ".0111111110.",
+    ".0111111110.",
+    ".0111111110.",
+    "..01111110..",
+    "..00111100..",
+    "...044440...",
+    "..44444444..",
+    ".4444444444.",
+    ".0444444440.",
+    "..04444440..",
+    "...02..20...",
+    "...02..20...",
+    "...55..55...",
+    "...00..00..."
+  ];
+
+  const P_BACK_B = [
+    "....0000....",
+    "..00111100..",
+    ".0111111110.",
+    ".0111111110.",
+    ".0111111110.",
+    "..01111110..",
+    "..00111100..",
+    "...044440...",
+    "..44444444..",
+    ".4444444444.",
+    ".0444444440.",
+    "..04444440..",
+    "...02..20...",
+    "...02..20...",
+    "..55....55..",
+    "..00....00.."
+  ];
+
+  const SPR = {
+    frontA: buildSprite(P_FRONT_A, P),
+    frontB: buildSprite(P_FRONT_B, P),
+    backA:  buildSprite(P_BACK_A,  P),
+    backB:  buildSprite(P_BACK_B,  P)
+  };
+  SPR.frontA_L = flipCanvas(SPR.frontA);
+  SPR.frontB_L = flipCanvas(SPR.frontB);
+  SPR.backA_L  = flipCanvas(SPR.backA);
+  SPR.backB_L  = flipCanvas(SPR.backB);
+
+  /* ---------- bougainvillea bloom (11 x 11) ---------- */
+  const BLOOM_ROWS = [
+    "....000....",
+    "..0001000..",
+    ".001111100.",
+    "00311111100",
+    "03111111110",
+    "03112211110",
+    "03111111110",
+    "00311111100",
+    ".001111100.",
+    "..0001000..",
+    "....000...."
+  ];
+
+  function bloomPalette(outline, main, light, core) {
+    return { '0': outline, '1': main, '2': core, '3': light };
+  }
+
+  const BLOOM_VARIANTS = [
+    buildSprite(BLOOM_ROWS, bloomPalette('#6B0F3A', '#B3125A', '#E8367F', '#FFC93C')),
+    buildSprite(BLOOM_ROWS, bloomPalette('#8E0E48', '#D81B60', '#FF6FA5', '#FFC93C')),
+    buildSprite(BLOOM_ROWS, bloomPalette('#A3144C', '#F0457F', '#FF9EC4', '#FFC93C')),
+    buildSprite(BLOOM_ROWS, bloomPalette('#5A0A2E', '#9C0F4E', '#D0256E', '#FFC93C'))
+  ];
+
+  /* ---------- bush builder ---------- */
+  function buildBush(seed) {
+    const W = 38, H = 30;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+
+    let s = seed * 2654435761 % 2147483647;
+    const rnd = function () {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+
+    const greens = ['#1F5D2A', '#2E6B34', '#3E9B4F', '#4AA356'];
+    for (let i = 0; i < 34; i++) {
+      const x = Math.floor(rnd() * (W - 6));
+      const y = Math.floor(rnd() * (H - 5));
+      const w = 3 + Math.floor(rnd() * 6);
+      const h = 2 + Math.floor(rnd() * 4);
+      g.fillStyle = greens[Math.floor(rnd() * greens.length)];
+      g.fillRect(x, y, w, h);
+    }
+
+    for (let i = 0; i < 5; i++) {
+      const b = BLOOM_VARIANTS[Math.floor(rnd() * BLOOM_VARIANTS.length)];
+      const bx = Math.floor(rnd() * (W - 11));
+      const by = Math.floor(rnd() * (H - 13));
+      g.drawImage(b, bx, by);
+    }
+
+    return c;
+  }
+
+  const BUSHES_SPR = [buildBush(1), buildBush(2), buildBush(3), buildBush(4), buildBush(5)];
+
+  /* ---------- hut builder ---------- */
+  function buildHut(roofMain, roofLight, roofDark, wall, wallDark, wood) {
+    const W = 52, H = 52;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+
+    const cx = 26;
+    const roofTop = 3, roofBottom = 26;
+
+    /* --- roof: stepped cone --- */
+    for (let y = roofTop; y <= roofBottom; y++) {
+      const t = (y - roofTop) / (roofBottom - roofTop);
+      const halfW = Math.round(2 + t * 25);
+      const x0 = cx - halfW;
+      const w = halfW * 2;
+
+      g.fillStyle = ((y - roofTop) % 3 === 0) ? roofDark : roofMain;
+      g.fillRect(x0, y, w, 1);
+
+      g.fillStyle = roofLight;
+      g.fillRect(x0, y, Math.max(1, Math.round(halfW * 0.36)), 1);
+
+      g.fillStyle = roofDark;
+      g.fillRect(x0 + w - Math.max(1, Math.round(halfW * 0.28)), y,
+                 Math.max(1, Math.round(halfW * 0.28)), 1);
+    }
+
+    /* roof outline */
+    g.fillStyle = '#2B1A14';
+    for (let y = roofTop; y <= roofBottom; y++) {
+      const t = (y - roofTop) / (roofBottom - roofTop);
+      const halfW = Math.round(2 + t * 25);
+      g.fillRect(cx - halfW, y, 1, 1);
+      g.fillRect(cx + halfW - 1, y, 1, 1);
+    }
+    g.fillRect(cx - 3, roofTop - 1, 6, 1);
+
+    /* roof trim board */
+    g.fillStyle = wood;
+    g.fillRect(2, roofBottom + 1, W - 4, 3);
+    g.fillStyle = '#2B1A14';
+    g.fillRect(2, roofBottom + 1, W - 4, 1);
+    g.fillRect(2, roofBottom + 3, W - 4, 1);
+
+    /* --- wall --- */
+    const wallTop = roofBottom + 4;
+    const wallBot = H - 2;
+
+    g.fillStyle = wall;
+    g.fillRect(6, wallTop, W - 12, wallBot - wallTop);
+
+    /* plank shading */
+    g.fillStyle = wallDark;
+    for (let y = wallTop + 4; y < wallBot; y += 5) {
+      g.fillRect(6, y, W - 12, 1);
+    }
+
+    /* wall outline */
+    g.fillStyle = '#2B1A14';
+    g.fillRect(6, wallTop, W - 12, 1);
+    g.fillRect(6, wallBot - 1, W - 12, 1);
+    g.fillRect(6, wallTop, 1, wallBot - wallTop);
+    g.fillRect(W - 7, wallTop, 1, wallBot - wallTop);
+
+    /* --- windows --- */
+    function window_(x, y) {
+      g.fillStyle = '#2B1A14';
+      g.fillRect(x - 1, y - 1, 12, 12);
+      g.fillStyle = '#FFD98A';
+      g.fillRect(x, y, 10, 10);
+      g.fillStyle = '#FFF3C4';
+      g.fillRect(x + 1, y + 1, 4, 4);
+      g.fillStyle = wood;
+      g.fillRect(x + 4, y, 2, 10);
+      g.fillRect(x, y + 4, 10, 2);
+    }
+    window_(12, wallTop + 5);
+    window_(30, wallTop + 5);
+
+    /* --- door --- */
+    const doorW = 12, doorH = 14;
+    const dx = cx - doorW / 2;
+    const dy = wallBot - doorH - 1;
+
+    g.fillStyle = '#2B1A14';
+    g.fillRect(dx - 1, dy - 1, doorW + 2, doorH + 1);
+    g.fillStyle = wood;
+    g.fillRect(dx, dy, doorW, doorH);
+    g.fillStyle = '#2B1A14';
+    g.fillRect(dx + doorW / 2 - 1, dy, 2, doorH);
+    g.fillStyle = '#FFC93C';
+    g.fillRect(dx + doorW - 4, dy + doorH / 2, 2, 2);
+
+    /* --- hanging sign --- */
+    const signW = 40, signH = 9;
+    const sx = cx - signW / 2;
+    const sy = wallTop - 8;
+
+    g.fillStyle = '#2B1A14';
+    g.fillRect(sx - 1, sy - 1, signW + 2, signH + 2);
+    g.fillStyle = '#FFF3DC';
+    g.fillRect(sx, sy, signW, signH);
+    g.fillStyle = roofMain;
+    g.fillRect(sx, sy, signW, 2);
+
+    return c;
+  }
+
+  /* =========================================================
+     2.  WORLD DATA
+     ========================================================= */
+  const HUT_DEFS = [
+    {
+      name: 'Hungry Eyes',
+      color: '#E8730C',
+      x: 118, y: 68,
+      spr: buildHut('#E8730C', '#FFA23E', '#B85A08', '#F7E6C9', '#E0C9A3', '#8B5E34')
+    },
+    {
+      name: 'Ashoka',
+      color: '#2E7D32',
+      x: 790, y: 68,
+      spr: buildHut('#2E7D32', '#57AE5C', '#1C5520', '#F7E6C9', '#E0C9A3', '#8B5E34')
+    },
+    {
+      name: 'Slaps',
+      color: '#C2185B',
+      x: 454, y: 540,
+      spr: buildHut('#C2185B', '#F0457F', '#8E1247', '#F7E6C9', '#E0C9A3', '#8B5E34')
+    }
+  ];
+
+  const huts = HUT_DEFS.map(function (d) {
+    return {
+      name: d.name,
+      color: d.color,
+      x: d.x,
+      y: d.y,
+      w: 52,
+      h: 52,
+      spr: d.spr,
+      box: { x: d.x + 6, y: d.y + 24, w: 40, h: 28 },
+      cx: d.x + 26,
+      cy: d.y + 34,
+      el: null
+    };
+  });
+
+  /* ---------- paths ---------- */
+  function isPath(tx, ty) {
+    if (ty >= 9 && ty <= 11 && tx >= 6 && tx <= 54) return true;   /* top corridor */
+    if (ty >= 30 && ty <= 32 && tx >= 6 && tx <= 54) return true;  /* bottom corridor */
+    if (tx >= 8 && tx <= 10 && ty >= 9 && ty <= 32) return true;   /* left branch */
+    if (tx >= 50 && tx <= 52 && ty >= 9 && ty <= 32) return true;  /* right branch */
+    if (tx >= 29 && tx <= 31 && ty >= 9 && ty <= 32) return true;  /* middle stem */
+    return false;
+  }
+
+  /* =========================================================
+     3.  GROUND CANVAS
+     ========================================================= */
+  const groundCanvas = document.createElement('canvas');
+  groundCanvas.width = WORLD_W;
+  groundCanvas.height = WORLD_H;
+  (function paintGround() {
+    const g = groundCanvas.getContext('2d');
+
+    /* base grass */
+    g.fillStyle = '#7CB342';
+    g.fillRect(0, 0, WORLD_W, WORLD_H);
+
+    /* mottled patches */
+    let s = 987654321;
+    const rnd = function () {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+
+    const grassTones = ['#6FA83A', '#89C24B', '#7CB342', '#6BA033'];
+    for (let i = 0; i < 2600; i++) {
+      const x = Math.floor(rnd() * WORLD_W);
+      const y = Math.floor(rnd() * WORLD_H);
+      const w = 3 + Math.floor(rnd() * 12);
+      const h = 3 + Math.floor(rnd() * 12);
+      g.fillStyle = grassTones[Math.floor(rnd() * grassTones.length)];
+      g.fillRect(x, y, w, h);
+    }
+
+    /* paths */
+    for (let ty = 0; ty < MAP_H; ty++) {
+      for (let tx = 0; tx < MAP_W; tx++) {
+        if (!isPath(tx, ty)) continue;
+        const x = tx * TILE, y = ty * TILE;
+
+        g.fillStyle = '#E8C48A';
+        g.fillRect(x, y, TILE, TILE);
+        g.fillStyle = '#D9B075';
+        g.fillRect(x, y, TILE, 2);
+
+        /* pebbles */
+        for (let k = 0; k < 3; k++) {
+          const px = x + Math.floor(rnd() * (TILE - 3));
+          const py = y + 2 + Math.floor(rnd() * (TILE - 4));
+          g.fillStyle = rnd() < 0.5 ? '#F2D6A4' : '#C79E63';
+          g.fillRect(px, py, 2, 2);
+        }
+      }
+    }
+
+    /* path edges */
+    for (let ty = 0; ty < MAP_H; ty++) {
+      for (let tx = 0; tx < MAP_W; tx++) {
+        if (!isPath(tx, ty)) continue;
+        const x = tx * TILE, y = ty * TILE;
+        if (!isPath(tx, ty - 1)) {
+          g.fillStyle = '#A8874F';
+          g.fillRect(x, y - 1, TILE, 1);
+        }
+        if (!isPath(tx, ty + 1)) {
+          g.fillStyle = '#A8874F';
+          g.fillRect(x, y + TILE, TILE, 1);
+        }
+        if (!isPath(tx - 1, ty)) {
+          g.fillStyle = '#A8874F';
+          g.fillRect(x - 1, y, 1, TILE);
+        }
+        if (!isPath(tx + 1, ty)) {
+          g.fillStyle = '#A8874F';
+          g.fillRect(x + TILE, y, 1, TILE);
+        }
+      }
+    }
+
+    /* grass tufts + tiny flowers on grass */
+    const tuft = ['#5E9430', '#8FCB52'];
+    for (let i = 0; i < 900; i++) {
+      const x = Math.floor(rnd() * WORLD_W);
+      const y = Math.floor(rnd() * WORLD_H);
+      if (isPath(Math.floor(x / TILE), Math.floor(y / TILE))) continue;
+      g.fillStyle = tuft[Math.floor(rnd() * tuft.length)];
+      g.fillRect(x, y, 1, 3);
+      g.fillRect(x + 1, y + 1, 1, 2);
+    }
+    for (let i = 0; i < 130; i++) {
+      const x = Math.floor(rnd() * WORLD_W);
+      const y = Math.floor(rnd() * WORLD_H);
+      if (isPath(Math.floor(x / TILE), Math.floor(y / TILE))) continue;
+      g.fillStyle = rnd() < 0.5 ? '#FFFFFF' : '#FFE27A';
+      g.fillRect(x, y, 2, 2);
+    }
+  })();
+
+  /* =========================================================
+     4.  BUSH SCATTER
+     ========================================================= */
+  const bushes = [];
+  (function scatterBushes() {
+    let s = 424242;
+    const rnd = function () {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+
+    const blocked = function (x, y) {
+      /* keep clear of paths */
+      const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
+      if (isPath(tx, ty)) return true;
+      /* keep clear of huts */
+      for (let i = 0; i < huts.length; i++) {
+        const h = huts[i];
+        if (x > h.x - 34 && x < h.x + h.w + 34 &&
+            y > h.y - 34 && y < h.y + h.h + 34) return true;
+      }
+      /* keep clear of spawn */
+      if (Math.abs(x - 480) < 60 && Math.abs(y - 330) < 60) return true;
+      return false;
+    };
+
+    let tries = 0;
+    while (bushes.length < 90 && tries < 4000) {
+      tries++;
+      const x = 20 + rnd() * (WORLD_W - 40);
+      const y = 30 + rnd() * (WORLD_H - 50);
+      if (blocked(x, y)) continue;
+      bushes.push({
+        x: x,
+        y: y,
+        spr: BUSHES_SPR[Math.floor(rnd() * BUSHES_SPR.length)]
+      });
+    }
+  })();
+
+  /* =========================================================
+     5.  COLLECTIBLE FLOWERS
+     ========================================================= */
+  const FLOWER_LINES = [
+    "I'm sorry.",
+    "I've been carefree and absent-minded.",
+    "The excitement of that day isn't to blame.",
+    "That date was lovely.",
+    "I'm sorry I couldn't ask you out sooner."
+  ];
+
+  const flowers = [
+    { x: 160, y: 300 },
+    { x: 824, y: 300 },
+    { x: 300, y: 505 },
+    { x: 660, y: 505 },
+    { x: 480, y: 200 }
+  ].map(function (f, i) {
+    return {
+      x: f.x, y: f.y,
+      taken: false,
+      line: FLOWER_LINES[i],
+      phase: i * 0.9,
+      spr: BLOOM_VARIANTS[i % BLOOM_VARIANTS.length]
+    };
+  });
+
+  /* =========================================================
+     6.  PLAYER
+     ========================================================= */
+  const player = {
+    x: 480, y: 330,
+    vx: 0, vy: 0,
+    dir: 'front',
+    frame: 0,
+    animT: 0,
+    speed: 92
+  };
+
+  function resetPlayer() {
+    player.x = 480; player.y = 330;
+    player.vx = 0; player.vy = 0;
+    player.dir = 'front';
+    player.frame = 0;
+    player.animT = 0;
+  }
+
+  /* =========================================================
+     7.  CAMERA
+     ========================================================= */
+  const cam = { x: 0, y: 0 };
+
+  function updateCamera() {
+    let tx = player.x - VIEW_W / 2;
+    let ty = player.y - VIEW_H / 2;
+    cam.x = Math.max(0, Math.min(WORLD_W - VIEW_W, tx));
+    cam.y = Math.max(0, Math.min(WORLD_H - VIEW_H, ty));
+    cam.x = Math.round(cam.x);
+    cam.y = Math.round(cam.y);
+  }
+
+  /* =========================================================
+     8.  INPUT
+     ========================================================= */
+  const keys = {};
+  let joyActive = false;
+  let joyOriginX = 0, joyOriginY = 0;
+  let joyDX = 0, joyDY = 0;
+
+  window.addEventListener('keydown', function (e) {
+    const k = e.key.toLowerCase();
+    keys[k] = true;
+    if (k === ' ' || k === 'arrowup' || k === 'arrowdown' ||
+        k === 'arrowleft' || k === 'arrowright') {
+      e.preventDefault();
+    }
+    if (k === ' ' && nearHut) chooseHut(nearHut);
+  });
+
+  window.addEventListener('keyup', function (e) {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  /* ---------- pointer joystick ---------- */
+  function stagePoint(e) {
+    const r = stageEl.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  stageEl.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('.ending')) return;
+    if (e.target.closest('.prompt')) return;
+
+    const p = stagePoint(e);
+    joyActive = true;
+    joyOriginX = p.x;
+    joyOriginY = p.y;
+    joyDX = 0; joyDY = 0;
+
+    joyEl.style.left = p.x + 'px';
+    joyEl.style.top  = p.y + 'px';
+    joyEl.classList.add('on');
+
+    joyKnob.style.transform = 'translate(0,0)';
+
+    try { stageEl.setPointerCapture(e.pointerId); } catch (err) {}
+    e.preventDefault();
+  }, { passive: false });
+
+  stageEl.addEventListener('pointermove', function (e) {
+    if (!joyActive) return;
+    const p = stagePoint(e);
+    let dx = p.x - joyOriginX;
+    let dy = p.y - joyOriginY;
+
+    const maxR = 42;
+    const len = Math.hypot(dx, dy);
+    if (len > maxR) {
+      dx = dx / len * maxR;
+      dy = dy / len * maxR;
+    }
+
+    joyDX = dx / maxR;
+    joyDY = dy / maxR;
+
+    joyKnob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    e.preventDefault();
+  }, { passive: false });
+
+  function endJoy(e) {
+    if (!joyActive) return;
+    joyActive = false;
+    joyDX = 0; joyDY = 0;
+    joyEl.classList.remove('on');
+    try { stageEl.releasePointerCapture(e.pointerId); } catch (err) {}
+  }
+  stageEl.addEventListener('pointerup', endJoy);
+  stageEl.addEventListener('pointercancel', endJoy);
+
+  /* =========================================================
+     9.  COLLISION
+     ========================================================= */
+  function blocked(nx, ny) {
+    if (nx < 8 || nx > WORLD_W - 8) return true;
+    if (ny < 26 || ny > WORLD_H - 6) return true;
+
+    for (let i = 0; i < huts.length; i++) {
+      const b = huts[i].box;
+      if (nx > b.x && nx < b.x + b.w && ny > b.y && ny < b.y + b.h) return true;
+    }
+    return false;
+  }
+
+  /* =========================================================
+     10.  DOM LABELS
+     ========================================================= */
+  huts.forEach(function (h) {
+    const el = document.createElement('div');
+    el.className = 'hut-label';
+    el.textContent = h.name;
+    el.style.setProperty('--c', h.color);
+    labelsEl.appendChild(el);
+    h.el = el;
+  });
+
+  /* =========================================================
+     11.  HUT INTERACTION
+     ========================================================= */
+  let nearHut = null;
+  let chosen = false;
+  let lastHutName = '';
+  let promptPos = { x: 0, y: 0 };
+
+  promptEl.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (nearHut) chooseHut(nearHut);
+  });
+  promptEl.addEventListener('pointerdown', function (e) {
+    e.stopPropagation();
+  });
+
+  function chooseHut(h) {
+    if (chosen) return;
+    chosen = true;
+
+    endName.textContent = h.name;
+    endingEl.classList.add('on');
+
+    /* stop input */
+    joyActive = false;
+    joyEl.classList.remove('on');
+    joyDX = 0; joyDY = 0;
+    keys.arrowup = keys.arrowdown = keys.arrowleft = keys.arrowright = false;
+    keys.w = keys.a = keys.s = keys.d = false;
+  }
+
+  replayEl.addEventListener('click', function () {
+    endingEl.classList.remove('on');
+    chosen = false;
+    nearHut = null;
+    promptEl.classList.remove('on');
+    resetPlayer();
+
+    flowers.forEach(function (f) { f.taken = false; });
+
+    toastEl.classList.remove('on');
+  });
+
+  /* =========================================================
+     12.  TOAST
+     ========================================================= */
+  let toastTimer = null;
+  function showToast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('on');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastEl.classList.remove('on');
+    }, 2600);
+  }
+
+  /* =========================================================
+     13.  UPDATE
+     ========================================================= */
+  function update(dt) {
+    if (chosen) return;
+
+    /* ---- movement input ---- */
+    let ix = 0, iy = 0;
+
+    if (keys.arrowleft  || keys.a) ix -= 1;
+    if (keys.arrowright || keys.d) ix += 1;
+    if (keys.arrowup    || keys.w) iy -= 1;
+    if (keys.arrowdown  || keys.s) iy += 1;
+
+    if (joyActive) {
+      const len = Math.hypot(joyDX, joyDY);
+      if (len > 0.18) {
+        ix += joyDX;
+        iy += joyDY;
+      }
+    }
+
+    const mag = Math.hypot(ix, iy);
+    if (mag > 1) { ix /= mag; iy /= mag; }
+
+    const moving = Math.hypot(ix, iy) > 0.05;
+
+    /* ---- direction ---- */
+    if (moving) {
+      if (Math.abs(iy) > Math.abs(ix)) {
+        player.dir = iy < 0 ? 'back' : 'front';
+      } else {
+        player.dir = ix < 0 ? 'left' : 'right';
+      }
+    }
+
+    /* ---- animation ---- */
+    if (moving) {
+      player.animT += dt;
+      if (player.animT > 0.13) {
+        player.animT = 0;
+        player.frame = player.frame ? 0 : 1;
+      }
+    } else {
+      player.frame = 0;
+      player.animT = 0;
+    }
+
+    /* ---- move ---- */
+    const vx = ix * player.speed;
+    const vy = iy * player.speed;
+
+    const nx = player.x + vx * dt;
+    if (!blocked(nx, player.y)) player.x = nx;
+
+    const ny = player.y + vy * dt;
+    if (!blocked(player.x, ny)) player.y = ny;
+
+    /* ---- camera ---- */
+    updateCamera();
+
+    /* ---- flowers ---- */
+    for (let i = 0; i < flowers.length; i++) {
+      const f = flowers[i];
+      if (f.taken) continue;
+      if (Math.hypot(f.x - player.x, f.y - player.y) < 20) {
+        f.taken = true;
+        showToast(f.line);
+      }
+    }
+
+    /* ---- hut proximity ---- */
+    let best = null;
+    let bestD = 1e9;
+    for (let i = 0; i < huts.length; i++) {
+      const h = huts[i];
+      const d = Math.hypot(h.cx - player.x, h.cy - player.y);
+      if (d < 68 && d < bestD) {
+        bestD = d;
+        best = h;
+      }
+    }
+
+    if (best !== nearHut) {
+      nearHut = best;
+      if (nearHut) {
+        promptTx.textContent = 'Pick ' + nearHut.name;
+        promptEl.classList.add('on');
+      } else {
+        promptEl.classList.remove('on');
+      }
+    }
+  }
+
+  /* =========================================================
+     14.  RENDER
+     ========================================================= */
+  function pickPlayerSprite() {
+    const f = player.frame;
+    if (player.dir === 'back') {
+      return f ? SPR.backB : SPR.backA;
+    }
+    if (player.dir === 'left') {
+      return f ? SPR.frontB_L : SPR.frontA_L;
+    }
+    if (player.dir === 'right') {
+      return f ? SPR.frontB : SPR.frontA;
+    }
+    return f ? SPR.frontB : SPR.frontA;
+  }
+
+  function render(time) {
+    /* ---- sky / grass base ---- */
+    ctx.fillStyle = '#7CB342';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    /* ---- ground slice ---- */
+    ctx.drawImage(
+      groundCanvas,
+      cam.x, cam.y, VIEW_W, VIEW_H,
+      0, 0, VIEW_W, VIEW_H
+    );
+
+    /* ---- build draw list ---- */
+    const list = [];
+
+    for (let i = 0; i < bushes.length; i++) {
+      const b = bushes[i];
+      const sx = b.x - cam.x;
+      const sy = b.y - cam.y;
+      if (sx < -60 || sx > VIEW_W + 60 || sy < -60 || sy > VIEW_H + 60) continue;
+      list.push({
+        z: b.y + 24,
+        fn: function () {
+          ctx.drawImage(b.spr, Math.round(sx) - 19, Math.round(sy) - 26);
+        }
+      });
+    }
+
+    for (let i = 0; i < huts.length; i++) {
+      const h = huts[i];
+      const sx = h.x - cam.x;
+      const sy = h.y - cam.y;
+      if (sx < -80 || sx > VIEW_W + 80 || sy < -80 || sy > VIEW_H + 80) continue;
+      list.push({
+        z: h.y + h.h - 4,
+        fn: function () {
+          ctx.drawImage(h.spr, Math.round(sx), Math.round(sy));
+        }
+      });
+    }
+
+    for (let i = 0; i < flowers.length; i++) {
+      const f = flowers[i];
+      if (f.taken) continue;
+      const sx = f.x - cam.x;
+      const sy = f.y - cam.y;
+      if (sx < -30 || sx > VIEW_W + 30 || sy < -30 || sy > VIEW_H + 30) continue;
+
+      const bob = Math.sin(time / 420 + f.phase) * 2.5;
+      const glow = 0.55 + 0.45 * Math.sin(time / 320 + f.phase);
+
+      list.push({
+        z: f.y + 5,
+        fn: function () {
+          ctx.save();
+          ctx.globalAlpha = 0.35 * glow;
+          ctx.fillStyle = '#FFC93C';
+          ctx.beginPath();
+          ctx.arc(Math.round(sx), Math.round(sy + bob), 11, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.drawImage(f.spr, Math.round(sx) - 5, Math.round(sy + bob) - 5);
+        }
+      });
+    }
+
+    /* player */
+    const pspr = pickPlayerSprite();
+    const px = player.x - cam.x;
+    const py = player.y - cam.y;
+    list.push({
+      z: player.y,
+      fn: function () {
+        /* shadow */
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(Math.round(px), Math.round(py), 7, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        ctx.drawImage(pspr, Math.round(px) - 6, Math.round(py) - 16);
+      }
+    });
+
+    /* ---- sort + draw ---- */
+    list.sort(function (a, b) { return a.z - b.z; });
+    for (let i = 0; i < list.length; i++) list[i].fn();
+
+    /* ---- soft vignette ---- */
+    const vg = ctx.createRadialGradient(
+      VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.38,
+      VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.95
+    );
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(40,10,30,0.22)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+    /* ---- DOM overlays ---- */
+    syncOverlays();
+  }
+
+  /* =========================================================
+     15.  OVERLAY SYNC
+     ========================================================= */
+  let scale = 1;
+
+  function computeScale() {
+    const r = stageEl.getBoundingClientRect();
+    scale = r.width / VIEW_W;
+  }
+
+  function syncOverlays() {
+    /* hut labels */
+    for (let i = 0; i < huts.length; i++) {
+      const h = huts[i];
+      const sx = (h.cx - cam.x) * scale;
+      const sy = (h.y - cam.y - 8) * scale;
+
+      const off =
+        sx < -80 || sx > stageEl.clientWidth + 80 ||
+        sy < -60 || sy > stageEl.clientHeight + 60;
+
+      if (off) {
+        h.el.style.opacity = '0';
+      } else {
+        h.el.style.opacity = '1';
+        h.el.style.transform =
+          'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px) translate(-50%,-50%)';
+      }
+    }
+
+    /* prompt */
+    if (nearHut && !chosen) {
+      const sx = (nearHut.cx - cam.x) * scale;
+      const sy = (nearHut.y - cam.y + 62) * scale;
+      promptEl.style.transform =
+        'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px) translate(-50%,-50%)';
+    }
+  }
+
+  /* =========================================================
+     16.  LOOP
+     ========================================================= */
+  let last = performance.now();
+
+  function loop(now) {
+    let dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.05) dt = 0.05;
+
+    update(dt);
+    render(now);
+
+    requestAnimationFrame(loop);
+  }
+
+  /* =========================================================
+     17.  BOOT
+     ========================================================= */
+  function boot() {
+    computeScale();
+    updateCamera();
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', function () {
+    computeScale();
+  });
+
+  window.addEventListener('orientationchange', function () {
+    setTimeout(computeScale, 120);
+  });
+
+  /* prevent iOS bounce while dragging on stage */
+  document.addEventListener('touchmove', function (e) {
+    if (e.target.closest && e.target.closest('.stage')) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  /* prompt key hint: hide on touch devices */
+  if (window.matchMedia('(hover: none)').matches) {
+    promptKy.style.display = 'none';
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      computeScale();
+      updateCamera();
+      requestAnimationFrame(loop);
+    });
+  } else {
+    boot();
+  }
+
+})();
+</script>
+
+</body>
+</html>
